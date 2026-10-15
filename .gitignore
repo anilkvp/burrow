@@ -1,0 +1,49 @@
+# ── Rust build output ──────────────────────────────
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo.lock is intentionally COMMITTED (binary workspace: reproducible builds)
+
+# ── Local data: indexes, models, caches ───────────
+# fastembed downloads models here if no cache_dir is set
+.fastembed_cache/
+# model files that end up in the repo by accident
+*.onnx
+models/
+
+# LanceDB tables (if you point --data-dir / MNEMO_DATA_DIR inside the repo)
+*.lance/
+/data/
+/db/
+/.mnemo/
+
+# ── Evaluation ─────────────────────────────────────
+# eval/dataset.jsonl and eval/results.jsonl are tracked;
+# per-run scratch output is not
+/eval/runs/
+/eval/tmp/
+
+# ── Secrets & local config ─────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Profiling & benchmarks ─────────────────────────
+flamegraph.svg
+perf.data*
+/target/criterion/
+
+# ── Editors & IDEs ─────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.zed/
+
+# ── OS files ───────────────────────────────────────
+.DS_Store
+Thumbs.db
