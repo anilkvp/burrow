@@ -1,6 +1,6 @@
 # Burrow
 
-![Status](https://img.shields.io/badge/status-in%20development-yellow)
+![status: wip](https://img.shields.io/badge/status-WIP-orange)
 
 A small LSM-tree key-value store in Rust that never uses more memory than you give it.
 
