@@ -7,7 +7,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::error::Result;
+use crate::{
+    error::Result,
+    wal::Decoded::{Corrupt, Truncated},
+};
 
 const HEADER_LEN: usize = 8;
 const MIN_PAYLOAD: usize = 1 + 4 + 4;
@@ -77,6 +80,51 @@ impl WalWriter {
         Ok(())
     }
 }
+
+#[derive(Default)]
+pub struct Replay {
+    pub records: Vec<Record>,
+    pub valid_len: u64,
+    pub file_len: u64,
+    pub stop_reason: Option<&'static str>,
+}
+
+pub fn replay(path: &Path) -> Result<Replay> {
+    let bytes = match std::fs::read(path) {
+        Ok(b) => b,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Replay::default()),
+        Err(e) => return Err(e.into()),
+    };
+    let mut out = Replay {
+        file_len: bytes.len() as u64,
+        ..Default::default()
+    };
+
+    let mut pos = 0;
+
+    loop {
+        match decode(&bytes[pos..]) {
+            Decoded::Record(rec, size) => {
+                out.records.push(rec);
+                pos += size;
+            }
+            Decoded::Eof => break,
+            Decoded::Truncated => out.stop_reason = Some("Truncated"),
+            Decoded::Corrupt(reason) => out.stop_reason = Some(reason),
+        }
+    }
+    out.valid_len = pos as u64;
+    Ok(out)
+}
+
+pub fn truncate_to(path: &Path, len: u64) -> Result<()> {
+    let f = OpenOptions::new().write(true).open(path)?;
+    f.set_len(len)?;
+    f.sync_all()?;
+    Ok(())
+}
+
+impl Replay {}
 
 /// Encode key value pairs into WAL record format.
 ///

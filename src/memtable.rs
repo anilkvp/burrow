@@ -104,16 +104,27 @@ impl MemTable {
             .map(|(k, e)| (k.as_slice(), e))
     }
 
+    pub fn check_fit(&self, key: &[u8], payload_len: usize) -> Result<(), MemTableError> {
+        self.after_size(key, payload_len).map(|_| ())
+    }
+
     fn insert(&mut self, key: Vec<u8>, value: Entry) -> Result<(), MemTableError> {
-        let full_cost = key.len() + value.payload_len() + ENTRY_OVERHEAD;
+        let new_size = self.after_size(&key, value.payload_len())?;
+        self.map.insert(key, value);
+        self.size = new_size;
+        Ok(())
+    }
+
+    fn after_size(&self, key: &[u8], payload_len: usize) -> Result<usize, MemTableError> {
+        let full_cost = key.len() + payload_len + ENTRY_OVERHEAD;
         if full_cost > self.budget {
             return Err(MemTableError::EntryTooLarge {
                 size: full_cost,
                 budget: self.budget,
             });
         }
-        let new_size = match self.map.get(key.as_slice()) {
-            Some(old) => self.size - old.payload_len() + value.payload_len(),
+        let new_size = match self.map.get(key) {
+            Some(old) => self.size - old.payload_len() + payload_len,
             None => self.size + full_cost,
         };
 
@@ -123,10 +134,7 @@ impl MemTable {
                 available: self.budget - self.size,
             });
         }
-
-        self.map.insert(key, value);
-        self.size = new_size;
-        Ok(())
+        Ok(new_size)
     }
 }
 
