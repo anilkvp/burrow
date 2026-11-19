@@ -4,6 +4,7 @@ use std::{
     fs::{File, OpenOptions},
     io::{BufWriter, Write},
     path::Path,
+    result,
     time::{Duration, Instant},
 };
 
@@ -79,6 +80,11 @@ impl WalWriter {
         self.last_sync = Instant::now();
         Ok(())
     }
+
+    pub fn sync_dir(&self, dir: &Path) -> Result<()> {
+        File::open(dir)?.sync_all()?;
+        Ok(())
+    }
 }
 
 #[derive(Default)]
@@ -103,14 +109,22 @@ pub fn replay(path: &Path) -> Result<Replay> {
     let mut pos = 0;
 
     loop {
-        match decode(&bytes[pos..]) {
+        let result = decode(&bytes[pos..]);
+        eprintln!("pos={pos} result={result:?}");
+        match result {
             Decoded::Record(rec, size) => {
                 out.records.push(rec);
                 pos += size;
             }
             Decoded::Eof => break,
-            Decoded::Truncated => out.stop_reason = Some("Truncated"),
-            Decoded::Corrupt(reason) => out.stop_reason = Some(reason),
+            Decoded::Truncated => {
+                out.stop_reason = Some("Truncated");
+                break;
+            }
+            Decoded::Corrupt(reason) => {
+                out.stop_reason = Some(reason);
+                break;
+            }
         }
     }
     out.valid_len = pos as u64;
