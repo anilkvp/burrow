@@ -4,14 +4,10 @@ use std::{
     fs::{File, OpenOptions},
     io::{BufWriter, Write},
     path::Path,
-    result,
     time::{Duration, Instant},
 };
 
-use crate::{
-    error::Result,
-    wal::Decoded::{Corrupt, Truncated},
-};
+use crate::error::Result;
 
 const HEADER_LEN: usize = 8;
 const MIN_PAYLOAD: usize = 1 + 4 + 4;

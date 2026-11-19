@@ -22,7 +22,12 @@ impl Default for Options {
 }
 
 const WAL_NAME: &str = "000001.wal";
+
 pub struct Db {
+    #[expect(
+        dead_code,
+        reason = "used from M3 to create SSTable and WAL files in this folder"
+    )]
     dir: PathBuf,
     wal: WalWriter,
     mem: MemTable,
